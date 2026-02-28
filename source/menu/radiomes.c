@@ -308,14 +308,14 @@ unsigned char *radio_moveToNext_80047880(menu_chara_struct *unk, unsigned char *
     int size;
 
     pScript++;
-    menu_gcl_read_word_80047098(&size, pScript);
+    size = load_big_endian_int(pScript);
     return pScript + size;
 }
 
 unsigned char *menu_gcl_exec_block_800478B4(menu_chara_struct *unk, unsigned char *pScript)
 {
-    const int      totalSize = ((pScript[1] << 8) | (pScript[2]));
-    unsigned char *ptr = pScript + 3;
+    const int      totalSize = ((pScript[1] << 24) | (pScript[2] << 16) | (pScript[3] << 8) | pScript[4]);
+    unsigned char *ptr = pScript + 5;
     int            code;
     int            size;
 
@@ -448,7 +448,7 @@ void menu_radio_codec_task_proc_80047AA0()
     field_18 &= ~0x1;
     dword_800ABB38->field_18 = field_18;
 
-    fontAddrOffset = load_big_endian_short_2(radioDatIter + 1) + 1;
+    fontAddrOffset = ((radioDatIter[1] << 24) | (radioDatIter[2] << 16) | (radioDatIter[3] << 8) | radioDatIter[4]) + 1;
     font_set_font_addr(1, radioDatIter + fontAddrOffset);
 
     dword_800ABB38->field_0_state = 0;
