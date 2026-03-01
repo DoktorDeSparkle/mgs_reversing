@@ -324,7 +324,13 @@ unsigned char *menu_gcl_exec_block_800478B4(menu_chara_struct *unk, unsigned cha
         if (*ptr == RDCODE_ENDLINE)
         {
             code = ptr[1];
-            ptr = menu_gcl_read_word_80047098(&size, ptr + 2);
+            /* Patch: outer 0xFF command size field expanded 2->4 bytes to match
+             * RDCODE_SCRIPT size field expansion. All command types are covered
+             * here; no per-command changes needed.
+             * Inlined rather than load_big_endian_int(ptr+2) — old PSQ GCC
+             * cannot handle pointer arithmetic expressions inside that macro. */
+            size = (ptr[2] << 24) | (ptr[3] << 16) | (ptr[4] << 8) | ptr[5];
+            ptr += 6; /* skip 0xFF + code + 4-byte size field */
             switch (code)
             {
             case RDCODE_TALK:
@@ -379,7 +385,7 @@ unsigned char *menu_gcl_exec_block_800478B4(menu_chara_struct *unk, unsigned cha
                 printf("block exec error\n");
                 break;
             }
-            ptr += size - sizeof(short);
+            ptr += size - sizeof(int); /* size field is now 4 bytes, not 2 */
         }
         else
         {
