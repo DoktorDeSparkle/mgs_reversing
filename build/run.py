@@ -31,6 +31,12 @@ def parse_args():
     required.add_argument('--pcsx-redux', type=str, default=build_dir,
                           help='Path to a directory with extracted PCSX-Redux emulator.')
 
+    optional.add_argument('--exe', type=str, default=None,
+                          help='Override the dev exe path (default: obj_dev/_mgsi.exe)')
+
+    optional.add_argument('--gdb-port', type=int, default=None,
+                          help='Enable GDB server on this port (e.g. 3333)')
+
     return parser.parse_args()
 
 def is_pcsx_redux_exe(path):
@@ -81,7 +87,7 @@ def find_pcsx_redux(path):
     sys.exit(1)
 
 def kill_process(process):
-    if platform.system() == 'Linux':
+    if platform.system() in ('Linux', 'Darwin'):
         process.terminate()
     else:
         # .terminate()/.kill() doesn't work on Windows...
@@ -91,18 +97,22 @@ def kill_process(process):
 def main():
     args = parse_args()
 
-    if not os.path.exists(dev_exe):
-        print("ERROR: Could not find a built 'dev' executable at path:", dev_exe)
+    exe_path = os.path.realpath(args.exe) if args.exe else dev_exe
+
+    if not os.path.exists(exe_path):
+        print("ERROR: Could not find a built 'dev' executable at path:", exe_path)
         print("       Please build the game with: python3 build.py; python3 build.py --variant=dev_exe")
         sys.exit(1)
 
     pcsx_redux_exe = find_pcsx_redux(args.pcsx_redux)
 
-    if platform.system() == 'Linux':
+    if platform.system() in ('Linux', 'Darwin'):
         st = os.stat(pcsx_redux_exe)
         os.chmod(pcsx_redux_exe, st.st_mode | stat.S_IEXEC)
 
-    launch_args = [str(pcsx_redux_exe), "-iso", args.iso, "-exe", dev_exe, "-run"]
+    launch_args = [str(pcsx_redux_exe), "-iso", args.iso, "-exe", exe_path, "-run"]
+    if args.gdb_port:
+        launch_args += ["-gdbserver", str(args.gdb_port)]
     print("Launching PCSX-Redux:", ' '.join(launch_args))
 
     process = subprocess.Popen(launch_args)
