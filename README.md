@@ -7,6 +7,12 @@ is still left to decompile [overlays](#Overlays) - making it possible to boot in
 
 The repository builds or aims to build the following artifacts:
 
+# FORK NOTE!
+
+This is for ongoing development for the metal gear undub project (https://blog.mgs-undubbed.io). As some translations are too long, we needed to modify the length from a short to a long, and it looks like this is viable with this fork! 
+
+Refinements to come soon.
+
 ### Main executables
 
 <table>
