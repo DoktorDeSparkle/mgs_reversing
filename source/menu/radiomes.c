@@ -319,6 +319,9 @@ unsigned char *menu_gcl_exec_block_800478B4(menu_chara_struct *unk, unsigned cha
     int            code;
     int            size;
 
+    printf("[exec_block] pScript @ %p, marker=0x%02X, totalSize=%d, first cmd byte=0x%02X\n", /* DEBUGPRINT */
+           pScript, pScript[0], totalSize, ptr[0]);
+
     while (*ptr)
     {
         if (*ptr == RDCODE_ENDLINE)
@@ -412,6 +415,14 @@ void menu_radio_codec_task_proc_80047AA0()
 
     mts_set_vsync_task();
     radioDatIter = dword_800ABB38->field_8_radioDatFragment;
+    printf("[codec_task] entry @ %p, first 12 bytes: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", /* DEBUGPRINT */
+           radioDatIter,
+           (unsigned char)radioDatIter[0], (unsigned char)radioDatIter[1],
+           (unsigned char)radioDatIter[2], (unsigned char)radioDatIter[3],
+           (unsigned char)radioDatIter[4], (unsigned char)radioDatIter[5],
+           (unsigned char)radioDatIter[6], (unsigned char)radioDatIter[7],
+           (unsigned char)radioDatIter[8], (unsigned char)radioDatIter[9],
+           (unsigned char)radioDatIter[10], (unsigned char)radioDatIter[11]);
     radioDatIter += 2;
 
     sectorAndSize = load_big_endian_int(radioDatIter);
@@ -419,6 +430,8 @@ void menu_radio_codec_task_proc_80047AA0()
 
     field_18 = load_big_endian_short_1(radioDatIter);
     radioDatIter += 2;
+
+    printf("[codec_task] sectorAndSize=0x%08X field_18=0x%04X\n", sectorAndSize, field_18); /* DEBUGPRINT */
 
     while (FS_StreamTaskState())
     {
@@ -429,6 +442,8 @@ void menu_radio_codec_task_proc_80047AA0()
     sectorAndSize &= 0xFFFFFF; // % 0x1000000
     startSector = sectorAndSize;
 
+    printf("[codec_task] about to load FACE.DAT: sector=%d size=%d\n", startSector, pFacesGroupSize); /* DEBUGPRINT */
+
     dword_800ABB38->field_20_pFacesGroup = GV_AllocMemory(GV_PACKET_MEMORY0, pFacesGroupSize);
     if (dword_800ABB38->field_20_pFacesGroup == NULL)
     {
@@ -438,9 +453,8 @@ void menu_radio_codec_task_proc_80047AA0()
     // pFacesGroup is parsed in menu_radio_codec_task_proc_helper_80046F3C
     pFacesGroup = dword_800ABB38->field_20_pFacesGroup;
 
-    // At the start of the game if you manually call
-    // after the initial call, pFacesGroup is 0x25800 bytes
-    // large and it is read from FACE.DAT offset 0x13a800.
+    printf("[codec_task] FACE.DAT alloc @ %p, calling FS_LoadFileRequest(2, %d, %d, %p)\n", /* DEBUGPRINT */
+           pFacesGroup, startSector, pFacesGroupSize, pFacesGroup);
     FS_LoadFileRequest(2, startSector, pFacesGroupSize, pFacesGroup);
     while (FS_LoadFileSync() > 0)
     {
@@ -455,6 +469,9 @@ void menu_radio_codec_task_proc_80047AA0()
     dword_800ABB38->field_18 = field_18;
 
     fontAddrOffset = ((radioDatIter[1] << 24) | (radioDatIter[2] << 16) | (radioDatIter[3] << 8) | radioDatIter[4]) + 1;
+    printf("[codec_task] radioDatIter @ %p (0x80 byte = 0x%02X), fontAddrOffset=%d\n", /* DEBUGPRINT */
+           radioDatIter, (unsigned char)radioDatIter[0], fontAddrOffset);
+    printf("[codec_task] about to call font_set_font_addr and exec_block\n"); /* DEBUGPRINT */
     font_set_font_addr(1, radioDatIter + fontAddrOffset);
 
     dword_800ABB38->field_0_state = 0;
@@ -538,6 +555,9 @@ void sub_80047D70(MenuWork *work, int param_2, int pRadioCode)
     {
         size = ((unsigned int)pRadioCode / 0x1000000) * 2048;
     }
+
+    printf("[sub_80047D70] loading RADIO.DAT entry: pRadioCode=0x%08X sector=%d size=%d\n", /* DEBUGPRINT */
+           pRadioCode, startSector, size);
 
     // At the start of the game if you manually call
     // after the initial call, radioDatFragment is 0x800 bytes
