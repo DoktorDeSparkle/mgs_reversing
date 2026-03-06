@@ -37,6 +37,9 @@ def parse_args():
     optional.add_argument('--gdb-port', type=int, default=None,
                           help='Enable GDB server on this port (e.g. 3333)')
 
+    optional.add_argument('--logfile', type=str, default=None,
+                          help='Write PCSX-Redux stdout/stderr log to this file (e.g. /tmp/pcsx.log)')
+
     return parser.parse_args()
 
 def is_pcsx_redux_exe(path):
@@ -113,9 +116,19 @@ def main():
     launch_args = [str(pcsx_redux_exe), "-iso", args.iso, "-exe", exe_path, "-run"]
     if args.gdb_port:
         launch_args += ["-gdbserver", str(args.gdb_port)]
+    if args.logfile:
+        launch_args += ["-logfile", args.logfile]
     print("Launching PCSX-Redux:", ' '.join(launch_args))
 
-    process = subprocess.Popen(launch_args)
+    def open_log():
+        if args.logfile:
+            fh = open(args.logfile, 'w')
+            print(f"Logging PCSX-Redux output to: {args.logfile}")
+            return fh
+        return None
+
+    log_fh = open_log()
+    process = subprocess.Popen(launch_args, stdout=log_fh, stderr=log_fh)
     last_build_time = Path(build_success).lstat().st_mtime
 
     print("Waiting for a new build... [that will automatically reload PCSX-Redux]")
@@ -125,6 +138,8 @@ def main():
             time.sleep(0.1)
         except KeyboardInterrupt:
             kill_process(process)
+            if log_fh:
+                log_fh.close()
             break
 
         new_build_time = Path(build_success).lstat().st_mtime
@@ -135,8 +150,11 @@ def main():
 
         last_build_time = new_build_time
         kill_process(process)
+        if log_fh:
+            log_fh.close()
 
-        process = subprocess.Popen(launch_args)
+        log_fh = open_log()
+        process = subprocess.Popen(launch_args, stdout=log_fh, stderr=log_fh)
 
 if __name__ == '__main__':
     main()
